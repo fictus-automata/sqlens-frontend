@@ -18,9 +18,75 @@ export function transformGraphData(apiData, mode = 'column', onColumnClick, acti
 
   const isColumnMode = mode === 'column';
   
+  // Build the set of all highlighted column keys by traversing the full lineage chain
+  const highlightedKeys = new Set();
+  const highlightedNodes = new Set();
+
+  if (activeColumn) {
+    // Build adjacency maps: target→sources (upstream) and source→targets (downstream)
+    const upstreamMap = new Map();
+    const downstreamMap = new Map();
+
+    for (const edge of apiData.edges) {
+      const sKey = edge.source_column ? `${edge.source_node_id.split('::').pop()}.${edge.source_column}` : null;
+      const tKey = edge.target_column ? `${edge.target_node_id.split('::').pop()}.${edge.target_column}` : null;
+      
+      if (!isColumnMode) {
+         // In table mode, we just want to highlight the paths between nodes
+         const sNode = edge.source_node_id.split('::').pop();
+         const tNode = edge.target_node_id.split('::').pop();
+         
+         if (!upstreamMap.has(tNode)) upstreamMap.set(tNode, []);
+         upstreamMap.get(tNode).push(sNode);
+
+         if (!downstreamMap.has(sNode)) downstreamMap.set(sNode, []);
+         downstreamMap.get(sNode).push(tNode);
+      } else {
+         if (!sKey || !tKey) continue;
+         if (!upstreamMap.has(tKey)) upstreamMap.set(tKey, []);
+         upstreamMap.get(tKey).push(sKey);
+
+         if (!downstreamMap.has(sKey)) downstreamMap.set(sKey, []);
+         downstreamMap.get(sKey).push(tKey);
+      }
+    }
+
+    const startKey = isColumnMode ? activeColumn : activeColumn.split('.')[0];
+    const targetSet = isColumnMode ? highlightedKeys : highlightedNodes;
+
+    // BFS upstream 
+    const queue = [startKey];
+    targetSet.add(startKey);
+    // Add the node name itself to highlightedNodes if we're in column mode
+    if (isColumnMode) highlightedNodes.add(startKey.split('.')[0]);
+    
+    while (queue.length > 0) {
+      const current = queue.shift();
+      for (const upstream of (upstreamMap.get(current) || [])) {
+        if (!targetSet.has(upstream)) {
+          targetSet.add(upstream);
+          queue.push(upstream);
+          if (isColumnMode) highlightedNodes.add(upstream.split('.')[0]);
+        }
+      }
+    }
+
+    // BFS downstream
+    const downQueue = [startKey];
+    while (downQueue.length > 0) {
+      const current = downQueue.shift();
+      for (const downstream of (downstreamMap.get(current) || [])) {
+        if (!targetSet.has(downstream)) {
+          targetSet.add(downstream);
+          downQueue.push(downstream);
+          if (isColumnMode) highlightedNodes.add(downstream.split('.')[0]);
+        }
+      }
+    }
+  }
+
   // Transform Nodes
   const initialNodes = apiData.nodes.map((node) => {
-    // Strip type prefix if present
     const rawName = node.id.includes('::') ? node.id.split('::')[1] : node.id;
     
     return {
@@ -32,9 +98,10 @@ export function transformGraphData(apiData, mode = 'column', onColumnClick, acti
         columns: node.columns,
         onColumnClick,
         activeColumn,
-        isHighlighted: activeColumn && activeColumn.startsWith(`${rawName}.`)
+        highlightedKeys,
+        isHighlighted: activeColumn ? highlightedNodes.has(rawName) : false
       },
-      position: { x: 0, y: 0 }, // Will be set by layout
+      position: { x: 0, y: 0 },
     };
   });
 
@@ -43,15 +110,14 @@ export function transformGraphData(apiData, mode = 'column', onColumnClick, acti
   
   if (isColumnMode) {
     initialEdges = apiData.edges.map((edge) => {
-      // Determine if this edge is active based on clicked column
       const sourceKey = edge.source_column ? `${edge.source_node_id.split('::').pop()}.${edge.source_column}` : null;
       const targetKey = edge.target_column ? `${edge.target_node_id.split('::').pop()}.${edge.target_column}` : null;
-      
+
       let isDimmed = false;
       let isHighlighted = false;
-      
+
       if (activeColumn) {
-        if (sourceKey === activeColumn || targetKey === activeColumn) {
+        if (sourceKey && targetKey && highlightedKeys.has(sourceKey) && highlightedKeys.has(targetKey)) {
           isHighlighted = true;
         } else {
           isDimmed = true;
@@ -76,12 +142,27 @@ export function transformGraphData(apiData, mode = 'column', onColumnClick, acti
       const simpleId = `${edge.source_node_id}->${edge.target_node_id}`;
       if (!edgeSet.has(simpleId)) {
         edgeSet.add(simpleId);
+        
+        // Highlight entire query tree or just dimmed
+        let isDimmed = false;
+        let isHighlighted = false;
+        if (activeColumn) {
+           const sNode = edge.source_node_id.split('::').pop();
+           const tNode = edge.target_node_id.split('::').pop();
+           if (highlightedNodes.has(sNode) && highlightedNodes.has(tNode)) {
+               isHighlighted = true;
+           } else {
+               isDimmed = true;
+           }
+        }
+
         initialEdges.push({
           id: simpleId,
           source: edge.source_node_id,
           target: edge.target_node_id,
           type: 'default',
-          animated: false,
+          animated: isHighlighted,
+          className: isHighlighted ? 'highlighted' : (isDimmed ? 'dimmed' : ''),
         });
       }
     });

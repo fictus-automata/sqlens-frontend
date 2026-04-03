@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 function ColumnNode({ data }) {
-  const { node_name, node_type, columns, onColumnClick, activeColumn } = data;
+  const { node_name, node_type, columns, onColumnClick, activeColumn, highlightedKeys } = data;
 
   return (
     <div className="custom-node" style={{ minWidth: '200px' }}>
@@ -14,7 +14,8 @@ function ColumnNode({ data }) {
       {columns && columns.length > 0 && (
         <div className="node-columns">
           {columns.map((col) => {
-            const isHighlighted = activeColumn === `${node_name}.${col.name}`;
+            const colKey = `${node_name}.${col.name}`;
+            const isHighlighted = activeColumn ? (highlightedKeys && highlightedKeys.has(colKey)) : false;
             
             return (
               <div 
