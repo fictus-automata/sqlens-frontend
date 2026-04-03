@@ -1,0 +1,120 @@
+.react-flow__node {
+  border-radius: var(--radius-sm);
+}
+
+/* Base custom node */
+.custom-node {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  min-width: 150px;
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+.custom-node.selected {
+  border-color: var(--edge-highlight);
+  box-shadow: 0 0 0 1px var(--edge-highlight), var(--shadow-sm);
+}
+
+.node-header {
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.node-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.node-columns {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-xs) 0;
+}
+
+.node-column {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.75rem;
+}
+
+.node-column-name {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.node-column-type {
+  color: var(--text-muted);
+  text-transform: lowercase;
+  font-size: 0.7rem;
+}
+
+/* Custom Handle styling */
+.column-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background-color: var(--border-light) !important;
+  border: 1px solid white !important;
+  transition: all 0.2s;
+}
+
+.column-handle:hover {
+  background-color: var(--edge-highlight) !important;
+  transform: scale(1.5);
+}
+
+.react-flow__handle-left.column-handle {
+  left: -4px !important;
+}
+
+.react-flow__handle-right.column-handle {
+  right: -4px !important;
+}
+
+/* Edges */
+.react-flow__edge-path {
+  stroke: var(--edge-default);
+  stroke-width: 1.5;
+  transition: stroke 0.2s, stroke-width 0.2s;
+}
+
+.react-flow__edge.highlighted .react-flow__edge-path {
+  stroke: var(--edge-highlight);
+  stroke-width: 2.5;
+  z-index: 1000;
+}
+
+.react-flow__edge.dimmed .react-flow__edge-path {
+  stroke: var(--bg-hover);
+  opacity: 0.3;
+}
+
+.react-flow__controls button {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.graph-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+  display: flex;
+  gap: var(--space-sm);
+  background-color: var(--bg-card);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+}
